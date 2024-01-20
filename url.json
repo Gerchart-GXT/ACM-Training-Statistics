@@ -1,0 +1,11 @@
+{
+    "codeforces": {
+        "sni":"codeforces.com",
+        "contest":"/contests",
+        "user":{
+            "home":"/profile",
+            "submission":"/submissions",
+            "contest":"/contests/with"
+        }
+    }
+}
