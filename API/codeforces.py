@@ -10,10 +10,6 @@ class API_Codeforces_Insertuser(MethodView):
     def get(self):
         userName = request.args.get("userName") 
         data = {"success": self.codeforces.insertUser(userName=userName)}
-
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
         return jsonify(data)
     
 class API_Codeforces_updateUserLogin(MethodView):
@@ -23,10 +19,6 @@ class API_Codeforces_updateUserLogin(MethodView):
 
     def get(self):
         data = {"success": self.codeforces.updateUsersLogin()}
-
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
         return jsonify(data)
 
 class API_Codeforces_updateUserSub(MethodView):
@@ -36,12 +28,9 @@ class API_Codeforces_updateUserSub(MethodView):
 
     def get(self):
         verdict = request.args.get("verdict") 
-        # minTMP = request.args.get("minTMP")
-        data = {"success": self.codeforces.updateUsersSub(verdict=verdict)}
-
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
+        print(verdict)
+        minTMP = request.args.get("minTMP")
+        data = {"success": self.codeforces.updateUsersSub(verdict=verdict, minTMP=minTMP)}
         return jsonify(data)
     
 class API_Codeforces_DeleteUser(MethodView):
@@ -52,10 +41,23 @@ class API_Codeforces_DeleteUser(MethodView):
     def get(self):
         userName = request.args.get("userName") 
         data = {"success": self.codeforces.deleteUser(userName=userName)}
+        return jsonify(data)
+    
+class API_Codeforces_GetUsers(MethodView):
+    def __init__(self, codeforces:Codeforces):
+        super().__init__()
+        self.codeforces = codeforces
 
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
+    def get(self):
+        users = [i[0] for i in self.codeforces.db.executeSQL(sql=
+            f'''
+                SELECT userName FROM cf_user
+            '''
+        )]
+        data = {
+            "success": True, 
+            "users":users
+        }
         return jsonify(data)
     
 class API_Codeforces_GetUserInfo(MethodView):
@@ -70,10 +72,6 @@ class API_Codeforces_GetUserInfo(MethodView):
             "success": userInfo["found"], 
             "userInfo": userInfo
         }
-
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
         return jsonify(data)
 
 class API_Codeforces_GetUserSub(MethodView):
@@ -94,8 +92,4 @@ class API_Codeforces_GetUserSub(MethodView):
             "success": True if len(subs) > 0 else False, 
             "userInfo": subs
         }
-
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_user"))
-        print(self.codeforces.db.executeSQL("SELECT * FROM cf_sub"))
-
         return jsonify(data)

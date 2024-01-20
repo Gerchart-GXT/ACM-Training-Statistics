@@ -18,6 +18,3 @@ class Browser:
 
     def getElements(self, css):
         return self.driver.find_elements(by=By.CSS_SELECTOR, value=css)
-
-    def __del__(self):
-        self.driver.close()

@@ -1,9 +1,10 @@
 import sqlite3
+import logging
+
 class SqlLite:
     def __init__(self, dbPath):
         self.db = sqlite3.connect(dbPath, check_same_thread=False)
         self.cursor = self.db.cursor()
-        self.cursor.execute("PRAGMA foreign_keys = ON")
         self.db.isolation_level = None
     def __del__(self):
         self.cursor.close()
@@ -14,10 +15,10 @@ class SqlLite:
 
     def executeSQL(self, sql):
         try:
-            self.cursor.execute(sql)
-            res = self.cursor.fetchall()
+            logging.debug(sql)
+            res = self.cursor.execute(sql).fetchall()
             self.db.commit()
+            return res
         except Exception as e:
             print(e)
             self.db.rollback()
-        return res

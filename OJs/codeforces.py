@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from datetime import datetime
 import json
+import logging
 
 INITTMP = "202401010000"
 MONTH = {
@@ -23,20 +24,19 @@ MONTH = {
 
 class Codeforces:
     def __init__(self, urlPath, browser:Browser):
-        self.urls=()
         self.browser=browser
         with open(file=urlPath, mode="r") as file:
             self.urls = json.load(file)
         self.urls = self.urls["codeforces"]
-        
+
         self.db = SqlLite("codeforces.db")
         self.db.executeSQL(sql=
             '''            
                 CREATE TABLE IF NOT EXISTS cf_user (
                     userName TEXT PRIMARY KEY,
-                    isOnline INTEGER,
-                    lastLoginUpdateTMP INTEGER,
-                    lastSubUpdateTMP INTEGER
+                    isOnline TEXT,
+                    lastLoginUpdateTMP TEXT,
+                    lastSubUpdateTMP TEXT
                 );
             '''
         )
@@ -44,34 +44,32 @@ class Codeforces:
             '''            
                 CREATE TABLE IF NOT EXISTS cf_sub (
                     userName TEXT,
-                    subTMP INTEGER,
-                    subID INTEGER PRIMARY KEY,
+                    subTMP TEXT,
+                    subID TEXT PRIMARY KEY,
                     proPath TEXT,
                     status TEXT,
                     FOREIGN KEY (userName) REFERENCES cf_user(userName) ON DELETE CASCADE
                 );
             '''
         )
-    
-    def __del__(self):
-        pass
+        logging.info("Codeforces Init Finish")
     
     def _getUserInfo(self, userName):
         url="https://" + self.urls["sni"] + self.urls["user"]["home"] + "/" + userName
         self.browser.openPage(url)
+        logging.info("_getUserInfo:" + url)
 
-        if self.browser.driver.current_url != url:
-            return {
-                "userName":userName,
-                "found": False
-            }
         try:
+            if self.browser.driver.current_url != url:  
+                raise Exception("User Not Found")
             if self.browser.getElement(css=".userbox .main-info > h1").text != userName:
                 raise Exception("Name Not Match")
             
             infos = self.browser.getElement(css=".userbox > .info > ul").find_elements(By.CSS_SELECTOR, "li")
             rankLine=infos[0].text.split(' ')
             loginLine = infos[3].text.split(' ')
+            logging.info("_getUserInfo Success")
+
             return {
                     "userName":userName,
                     "found": True,
@@ -82,7 +80,7 @@ class Codeforces:
                     "loginStatus": True if loginLine[2] == "online" else False
             }
         except Exception as e:
-            print(e)
+            logging.info("_getUserInfo Failed" + str(e))
             return {
                 "userName":userName,
                 "found": False
@@ -94,9 +92,10 @@ class Codeforces:
                 "userName": userName,
                 "found": False,
             }
-
+        
         url="https://" + self.urls["sni"] + self.urls["user"]["submission"] + "/" + userName
         try:
+            logging.info("_getUserSubmission:" + url)
             self.browser.openPage(url)
 
             verdictSelector=Select(self.browser.getElement(css="form.status-filter select[id='verdictName']"))
@@ -122,7 +121,8 @@ class Codeforces:
                     subDate[0] = MONTH[subDate[0]]
                     subTime = (subTMP[1][0:2], subTMP[1][3:5])
                     subTMP = f"{subDate[2]}{subDate[0]}{subDate[1]}{subTime[0]}{subTime[1]}"
-                    if int(subTMP) < int(minTMP):
+
+                    if subTMP < minTMP:
                         outDated = True
                         break
                     proPath = lineItems[3].find_element(By.CSS_SELECTOR, "a").get_attribute("href")
@@ -132,12 +132,14 @@ class Codeforces:
                     break
                 if _ + 1 < pageCount:
                     self.browser.getElement(f"a[href='/submissions/{userName}/page/{_ + 2}']").click()
+
         except Exception as e:
-            print(e)
+            logging.info("_getUserSubmission Failed" + str(e))
             return {
                 "userName": userName,
                 "found": False,
             }
+        logging.info("_getUserSubmission Success")
         return {
             "userName": userName,
             "found": True if len(subs) > 0 else False,
@@ -159,6 +161,7 @@ class Codeforces:
                 VALUES ("{userInfo["userName"]}", "{1 if userInfo["loginStatus"] == True else 0}", "{lastSubUpdateTMP}", "{formatted_time}");
             '''
         )
+
     
     def _updateSubmission(self, userName, submissions):
         for sub in submissions:
@@ -168,9 +171,11 @@ class Codeforces:
                     VALUES ("{sub["userName"]}", "{sub["subTMP"]}", "{sub["subID"]}", "{sub["proPath"]}", "{sub["status"]}")
                 '''
             )
+
         current_time = datetime.now()
         formatted_time = current_time.strftime("%Y%m%d%H%M")
         self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
+        
 
     def insertUser(self, userName):
         apiRes = self._getUserInfo(userName=userName)
@@ -242,12 +247,12 @@ class Codeforces:
                     WHERE userName = "{userName}"
                 '''
             )
-            # self.db.executeSQL(sql=
-            #     f'''
-            #         DELETE FROM cf_sub
-            #         WHERE userName = "{userName}"
-            #     '''
-            # )
+            self.db.executeSQL(sql=
+                f'''
+                    DELETE FROM cf_sub
+                    WHERE userName = "{userName}"
+                '''
+            )
         except Exception as e:
             print(e)
             return False
