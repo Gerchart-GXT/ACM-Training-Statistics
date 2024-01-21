@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from datetime import datetime
 import json
-import logging
+from component.logger import Logger
 
 INITTMP = "202401010000"
 MONTH = {
@@ -24,6 +24,7 @@ MONTH = {
 
 class Codeforces:
     def __init__(self, urlPath, browser:Browser):
+        Logger.callFuction()
         self.browser=browser
         with open(file=urlPath, mode="r") as file:
             self.urls = json.load(file)
@@ -34,9 +35,11 @@ class Codeforces:
             '''            
                 CREATE TABLE IF NOT EXISTS cf_user (
                     userName TEXT PRIMARY KEY,
-                    isOnline TEXT,
-                    lastLoginUpdateTMP TEXT,
-                    lastSubUpdateTMP TEXT
+                    isOnline INTEGER,
+                    rankCurrent INTEGER,
+                    rankMax INTEGER,
+                    lastLoginUpdateTMP INTEGER,
+                    lastSubUpdateTMP INTEGER
                 );
             '''
         )
@@ -44,20 +47,21 @@ class Codeforces:
             '''            
                 CREATE TABLE IF NOT EXISTS cf_sub (
                     userName TEXT,
-                    subTMP TEXT,
-                    subID TEXT PRIMARY KEY,
+                    subTMP INTEGER,
+                    subID INTEGER PRIMARY KEY,
                     proPath TEXT,
                     status TEXT,
                     FOREIGN KEY (userName) REFERENCES cf_user(userName) ON DELETE CASCADE
                 );
             '''
         )
-        logging.info("Codeforces Init Finish")
+        Logger.retFuction("success")
     
     def _getUserInfo(self, userName):
+        Logger.callFuction()
+
         url="https://" + self.urls["sni"] + self.urls["user"]["home"] + "/" + userName
         self.browser.openPage(url)
-        logging.info("_getUserInfo:" + url)
 
         try:
             if self.browser.driver.current_url != url:  
@@ -68,8 +72,8 @@ class Codeforces:
             infos = self.browser.getElement(css=".userbox > .info > ul").find_elements(By.CSS_SELECTOR, "li")
             rankLine=infos[0].text.split(' ')
             loginLine = infos[3].text.split(' ')
-            logging.info("_getUserInfo Success")
 
+            Logger.retFuction("success")
             return {
                     "userName":userName,
                     "found": True,
@@ -77,25 +81,21 @@ class Codeforces:
                         "current": rankLine[2], 
                         "max": rankLine[len(rankLine) - 1][:-1]
                     },
-                    "loginStatus": True if loginLine[2] == "online" else False
+                    "loginStatus": 1 if loginLine[2] == "online" else 0
             }
         except Exception as e:
-            logging.info("_getUserInfo Failed" + str(e))
+            Logger.retFuction("failed" + str(e))
             return {
                 "userName":userName,
                 "found": False
             }
 
     def _getUserSubmission(self, userName, verdict, minTMP):
-        if self._getUserInfo(userName=userName)["found"] != True:
-            return {
-                "userName": userName,
-                "found": False,
-            }
-        
+        Logger.callFuction()
+
         url="https://" + self.urls["sni"] + self.urls["user"]["submission"] + "/" + userName
         try:
-            logging.info("_getUserSubmission:" + url)
+            
             self.browser.openPage(url)
 
             verdictSelector=Select(self.browser.getElement(css="form.status-filter select[id='verdictName']"))
@@ -122,7 +122,7 @@ class Codeforces:
                     subTime = (subTMP[1][0:2], subTMP[1][3:5])
                     subTMP = f"{subDate[2]}{subDate[0]}{subDate[1]}{subTime[0]}{subTime[1]}"
 
-                    if subTMP < minTMP:
+                    if str(subTMP) < str(minTMP):
                         outDated = True
                         break
                     proPath = lineItems[3].find_element(By.CSS_SELECTOR, "a").get_attribute("href")
@@ -132,59 +132,81 @@ class Codeforces:
                     break
                 if _ + 1 < pageCount:
                     self.browser.getElement(f"a[href='/submissions/{userName}/page/{_ + 2}']").click()
-
+            Logger.retFuction("success")
+            return {
+                "userName": userName,
+                "found": True if len(subs) > 0 else False,
+                "submission": [{
+                    "userName":userName, 
+                    "proPath": key, 
+                    "subID":value[0], 
+                    "subTMP":value[1],
+                    "status": verdict
+                } for key, value in subs.items()]
+            }
         except Exception as e:
-            logging.info("_getUserSubmission Failed" + str(e))
+            Logger.retFuction("failed" + str(e))
             return {
                 "userName": userName,
                 "found": False,
             }
-        logging.info("_getUserSubmission Success")
-        return {
-            "userName": userName,
-            "found": True if len(subs) > 0 else False,
-            "submission": [{
-                "userName":userName, 
-                "proPath": key, 
-                "subID":value[0], 
-                "subTMP":value[1],
-                "status": verdict
-            } for key, value in subs.items()]
-        }
+
         
     def _updateUserInfo(self, userInfo, lastSubUpdateTMP):
-        current_time = datetime.now()
-        formatted_time = current_time.strftime("%Y%m%d%H%M")
-        self.db.executeSQL(sql=
-            f'''
-                INSERT OR REPLACE INTO cf_user (userName, isOnline, lastSubUpdateTMP, lastLoginUpdateTMP) 
-                VALUES ("{userInfo["userName"]}", "{1 if userInfo["loginStatus"] == True else 0}", "{lastSubUpdateTMP}", "{formatted_time}");
-            '''
-        )
+        Logger.callFuction()
 
-    
-    def _updateSubmission(self, userName, submissions):
-        for sub in submissions:
+        try:
+            current_time = datetime.now()
+            formatted_time = current_time.strftime("%Y%m%d%H%M")
             self.db.executeSQL(sql=
                 f'''
-                    INSERT OR REPLACE INTO cf_sub (userName, subTMP, subID, proPath, status) 
-                    VALUES ("{sub["userName"]}", "{sub["subTMP"]}", "{sub["subID"]}", "{sub["proPath"]}", "{sub["status"]}")
+                    INSERT OR REPLACE INTO cf_user (userName, isOnline, rankCurrent, rankMax, lastSubUpdateTMP, lastLoginUpdateTMP) 
+                    VALUES ("{userInfo["userName"]}", "{userInfo["loginStatus"]}", "{userInfo["rank"]["current"]}", "{userInfo["rank"]["max"]}", "{lastSubUpdateTMP}", "{formatted_time}");
                 '''
             )
-
-        current_time = datetime.now()
-        formatted_time = current_time.strftime("%Y%m%d%H%M")
-        self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
-        
-
-    def insertUser(self, userName):
-        apiRes = self._getUserInfo(userName=userName)
-        if apiRes["found"] == False:
+            Logger.retFuction("success")
+            return True
+        except Exception as e:
+            Logger.retFuction("failed" + str(e))
             return False
-        self._updateUserInfo(userInfo=apiRes, lastSubUpdateTMP=INITTMP)
-        return True
+    
+    def _updateSubmission(self, userName, submissions):
+        Logger.callFuction()
 
-    def updateUsersLogin(self):
+        try:
+            for sub in submissions:
+                self.db.executeSQL(sql=
+                    f'''
+                        INSERT OR REPLACE INTO cf_sub (userName, subTMP, subID, proPath, status) 
+                        VALUES ("{sub["userName"]}", "{sub["subTMP"]}", "{sub["subID"]}", "{sub["proPath"]}", "{sub["status"]}")
+                    '''
+                )
+            current_time = datetime.now()
+            formatted_time = current_time.strftime("%Y%m%d%H%M")
+            self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
+            Logger.retFuction("success")
+            return True
+        except Exception as e:
+            Logger.retFuction("failed" + str(e))
+            return False
+        
+    def insertUser(self, userName):
+        Logger.callFuction()
+
+        try:
+            apiRes = self._getUserInfo(userName=userName)
+            if apiRes["found"] == False:
+                raise Exception("User NotFound!")
+            self._updateUserInfo(userInfo=apiRes, lastSubUpdateTMP=INITTMP)
+            Logger.retFuction("success")
+            return True
+        except Exception as e:
+            Logger.retFuction("failed" + str(e))
+            return False
+
+    def updateUsersInfo(self):
+        Logger.callFuction()
+
         try:
             users = self.db.executeSQL(sql=
                 f'''
@@ -200,12 +222,15 @@ class Codeforces:
                     '''
                 )[0][0]
                 self._updateUserInfo(userInfo=self._getUserInfo(userName=userName), lastSubUpdateTMP=lastSubUpdateTMP)
+            Logger.retFuction("success")
+            return True
         except Exception as e:
-            print(e)
+            Logger.retFuction("failed" + str(e))
             return False
-        return True
 
     def updateUsersSub(self, verdict, minTMP=None):
+        Logger.callFuction()
+
         try:
             users = self.db.executeSQL(sql=
                 f'''
@@ -221,14 +246,20 @@ class Codeforces:
                     '''
                 )[0][0] if minTMP == None else minTMP
                 apiRes = self._getUserSubmission(userName=userName, verdict=verdict, minTMP=lastSubUpdateTMP)
-                if apiRes["found"] == True:
-                    self._updateSubmission(userName=userName, submissions=apiRes["submission"])
+            if apiRes["found"] == True:
+                self._updateSubmission(userName=userName, submissions=apiRes["submission"])
+            current_time = datetime.now()
+            formatted_time = current_time.strftime("%Y%m%d%H%M")
+            self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
+            Logger.retFuction("success")
+            return True
         except Exception as e:
-            print(e)
+            Logger.retFuction("failed" + str(e))
             return False
-        return True
     
     def deleteUser(self, userName):
+        Logger.callFuction()
+
         try: 
             item = self.db.executeSQL(sql=
                 f'''
@@ -253,8 +284,9 @@ class Codeforces:
                     WHERE userName = "{userName}"
                 '''
             )
+            Logger.retFuction("success")
+            return True
         except Exception as e:
-            print(e)
+            Logger.retFuction("failed" + str(e))
             return False
-        return True
 
