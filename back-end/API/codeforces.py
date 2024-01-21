@@ -18,7 +18,15 @@ class API_Codeforces_updateUserLogin(MethodView):
         self.codeforces = codeforces
 
     def get(self):
-        data = {"success": self.codeforces.updateUsersLogin()}
+        data = {
+            "success": self.codeforces.updateUsersLogin(),
+            "loginUser": [i[0] for i in self.codeforces.db.executeSQL(sql=
+                f'''
+                    SELECT userName FROM cf_user
+                    WHERE isOnline = "1"
+                '''
+            )]
+        }
         return jsonify(data)
 
 class API_Codeforces_updateUserSub(MethodView):
@@ -28,7 +36,6 @@ class API_Codeforces_updateUserSub(MethodView):
 
     def get(self):
         verdict = request.args.get("verdict") 
-        print(verdict)
         minTMP = request.args.get("minTMP")
         data = {"success": self.codeforces.updateUsersSub(verdict=verdict, minTMP=minTMP)}
         return jsonify(data)
@@ -85,7 +92,7 @@ class API_Codeforces_GetUserSub(MethodView):
         subs = self.codeforces.db.executeSQL(sql=
             f'''
                 SELECT * FROM cf_sub
-                WHERE userName = "{userName}"
+                WHERE userName = "{userName}" AND status = "{verdict}"
             '''
         )
         data = {
