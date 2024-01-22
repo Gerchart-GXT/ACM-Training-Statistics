@@ -3,29 +3,39 @@
         <div class="card title text-center" v-if="users.length > 0">
             <div class="card-body">
                 <div class="row">
-                    <div class="col-1 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2 m-auto p-1">
                         <div class="index">
                             No.
                         </div>
                     </div>
-                    <div class="col-3 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2 m-auto p-1">
                         <div class="realName">
                             realName
                         </div>
                     </div>
-                    <div class="sortTitle col-3 d-flex align-items-center justify-content-center" @click="sortByUsername">
+                    <div class="sortTitle col-md-2 m-auto p-1" @click="sortByUsername">
                         <div class="username">
                             CF-UserName
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-vertical" viewBox="0 0 16 16">
+                                <path d="M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                            </svg>
                         </div>
                     </div>
-                    <div class="sortTitle col-2 d-flex align-items-center justify-content-center" @click="sortByLogin">
+                    <div class="sortTitle col-md-2 m-auto p-1" @click="sortByLogin">
                         <div class="isOnline">
                             Online Status
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-vertical" viewBox="0 0 16 16">
+                                <path d="M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                            </svg>
                         </div>
+                        <i class="bi bi-arrows-vertical"></i>
                     </div>
-                    <div class="sortTitle col-3 d-flex align-items-center justify-content-center" @click="sortByRank">
+                    <div class="sortTitle col-md-4 m-auto p-1" @click="sortByRank">
                         <div class="rank">
                             Rank
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-vertical" viewBox="0 0 16 16">
+                                <path d="M8.354 14.854a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 13.293V2.707L6.354 3.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 2.707v10.586l1.146-1.147a.5.5 0 0 1 .708.708z"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -35,21 +45,21 @@
             @click="openCodeforcesUserSubmit(user.userName, 'Accepted')">
             <div class="card-body">
                 <div class="row">
-                    <div class="col-1 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2 m-auto p-1">
                         <div class="index">{{ (index + 1).toString() }}</div>
                     </div>
-                    <div class="col-3 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2  m-auto p-1">
                         <div class="realName">
                             realName
                         </div>
                     </div>
-                    <div class="col-3 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2  m-auto p-1">
                         <a :href="calUserPath(user.userName)"
                             class="link-priusermary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">
                             {{ user.userName }}
                         </a>
                     </div>
-                    <div class="col-2 d-flex align-items-center justify-content-center">
+                    <div class="col-md-2 m-auto p-1">
                         <div class="isOnline">
                             <div class="userOnline" v-if="user.isOnline == 1">
                                 <button type="button" class="btn btn-success">Online</button>
@@ -59,7 +69,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-3">
+                    <div class="col-md-4">
                         <div class="row">
                             <div class="rankCurrent">
                                 Current Rank: {{ user.rankCurrent }}

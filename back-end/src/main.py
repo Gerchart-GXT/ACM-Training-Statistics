@@ -52,7 +52,7 @@ def create_app():
 def main():
     app = create_app()
 
-    server = threading.Thread(target=lambda: serve(app, host='0.0.0.0', port=5000))
+    server = threading.Thread(target=lambda: serve(app, host="localhost", port=5000))
     server.start()
     UpdateUserInfoWithAPI()
     UpdateUserSubWithAPI()

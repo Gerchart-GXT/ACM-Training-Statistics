@@ -78,7 +78,6 @@ class Codeforces:
                 if (line[0] == "Last" and loginLine == None):
                     loginLine = line
             Logger.retFunction("success")
-            self.browser.closePage()
             return {
                     "userName":userName,
                     "found": True,
@@ -90,7 +89,6 @@ class Codeforces:
             }
         except Exception as e:
             Logger.retFunction("failed" + str(e))
-            self.browser.closePage()
             return {
                 "userName":userName,
                 "found": False
@@ -139,7 +137,6 @@ class Codeforces:
                 if _ + 1 < pageCount:
                     self.browser.getElement(f"a[href='/submissions/{userName}/page/{_ + 2}']").click()
             Logger.retFunction("success")
-            self.browser.closePage()
             return {
                 "userName": userName,
                 "found": True if len(subs) > 0 else False,
@@ -152,8 +149,7 @@ class Codeforces:
                 } for key, value in subs.items()]
             }
         except Exception as e:
-            Logger.retFunction("failed" + str(e))
-            self.browser.closePage()        
+            Logger.retFunction("failed" + str(e))        
             return {
                 "userName": userName,
                 "found": False,

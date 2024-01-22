@@ -32,9 +32,6 @@ class Browser:
     def openPage(self, url):
         self.driver.get(url)
 
-    def closePage(self):
-        self.driver.close()
-
     def getElement(self, css):
         return self.driver.find_element(by=By.CSS_SELECTOR, value=css)
 
