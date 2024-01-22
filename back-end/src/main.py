@@ -2,11 +2,12 @@ from component.browser import Browser
 from OJs.codeforces import Codeforces
 from API.codeforces import API_Codeforces_Insertuser, API_Codeforces_updateUserInfo, API_Codeforces_updateUserSub, API_Codeforces_DeleteUser, API_Codeforces_GetUsersInfo, API_Codeforces_SearchUserInfo, API_Codeforces_GetUsersSub
 from flask import Flask
+from flask_cors import CORS
 from component.logger import Logger
 
 def main():
     app = Flask(__name__)
-
+    CORS(app)
     browser = Browser()
     codeforces = Codeforces(urlPath="./url.json", browser=browser)
 

@@ -246,8 +246,8 @@ class Codeforces:
                     '''
                 )[0][0] if minTMP == None else minTMP
                 apiRes = self._getUserSubmission(userName=userName, verdict=verdict, minTMP=lastSubUpdateTMP)
-            if apiRes["found"] == True:
-                self._updateSubmission(userName=userName, submissions=apiRes["submission"])
+                if apiRes["found"] == True:
+                    self._updateSubmission(userName=userName, submissions=apiRes["submission"])
             current_time = datetime.now()
             formatted_time = current_time.strftime("%Y%m%d%H%M")
             self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
