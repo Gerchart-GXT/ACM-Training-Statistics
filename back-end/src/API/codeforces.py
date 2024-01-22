@@ -43,15 +43,14 @@ class API_Codeforces_updateUserSub(MethodView):
 
     def get(self):
         try:
-            verdict = request.args.get("verdict") 
             try:
                 minTMP = request.args.get("minTMP")
-                logging.info("API_Codeforces_updateUserSub " + verdict + " " + minTMP)
-                data = {"success": self.codeforces.updateUsersSub(verdict=verdict, minTMP=minTMP)}
+                logging.info("API_Codeforces_updateUserSub " + " " + minTMP)
+                data = {"success": self.codeforces.updateUsersSub(minTMP=minTMP)}
             except Exception as e:
                 logging.info("verdict is None")
-                logging.info("API_Codeforces_updateUserSub " + verdict)
-                data = {"success": self.codeforces.updateUsersSub(verdict=verdict)}
+                logging.info("API_Codeforces_updateUserSub ")
+                data = {"success": self.codeforces.updateUsersSub()}
 
         except Exception as e:
             logging.info("API_Codeforces_updateUserSub Failed" + str(e))
@@ -133,12 +132,30 @@ class API_Codeforces_GetUsersSub(MethodView):
             userName = request.args.get("userName") 
             verdict = request.args.get("verdict") 
             logging.info("API_Codeforces_GetUsersSub " + userName + " " + verdict)
-            subs = [list(i) for i in self.codeforces.db.executeSQL(sql=
-                f'''
-                    SELECT * FROM cf_sub
-                    WHERE userName = "{userName}" AND status = "{verdict}"
-                '''
-            )]
+            subs = []
+            if verdict == "All":
+                for i in [list(i) for i in self.codeforces.db.executeSQL(sql=
+                    f'''
+                        SELECT * FROM cf_sub
+                        WHERE userName = "{userName}" AND status = "Accepted"
+                    '''
+                )]:
+                    subs.append(i)
+                for i in [list(i) for i in self.codeforces.db.executeSQL(sql=
+                    f'''
+                        SELECT * FROM cf_sub
+                        WHERE userName = "{userName}" AND status = "Rejected"
+                    '''
+                )]:
+                    subs.append(i)
+            else:
+                for i in [list(i) for i in self.codeforces.db.executeSQL(sql=
+                    f'''
+                        SELECT * FROM cf_sub
+                        WHERE userName = "{userName}" AND status = "{verdict}"
+                    '''
+                )]:
+                    subs.append(i)
             data = {
                 "success": True if len(subs) > 0 else False, 
                 "subInfo": [

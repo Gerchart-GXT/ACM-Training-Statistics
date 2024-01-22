@@ -4,8 +4,36 @@ from API.codeforces import API_Codeforces_Insertuser, API_Codeforces_updateUserI
 from flask import Flask
 from flask_cors import CORS
 from component.logger import Logger
+from component.circleTask import CircleTask
 
-def main():
+import threading
+import requests
+
+from waitress import serve
+
+def UpdateUserInfoWithAPI():
+    Logger.callFunction()
+    url = 'http://localhost:5000/api/codeforces/update-user-info'
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        if data["success"] == True:
+            Logger.retFunction("success")
+    else:
+        Logger.retFunction("failed " + response.status_code )
+
+def UpdateUserSubWithAPI():
+    Logger.callFunction()
+    url = 'http://localhost:5000/api/codeforces/update-user-sub' 
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        if data["success"] == True:
+            Logger.retFunction("success")
+    else:
+        Logger.retFunction("failed " + response.status_code )
+
+def create_app():
     app = Flask(__name__)
     CORS(app)
     browser = Browser()
@@ -19,8 +47,22 @@ def main():
     app.add_url_rule('/api/codeforces/search-users-info', view_func=API_Codeforces_SearchUserInfo.as_view(name="/api/codeforces/search-users-info", codeforces=codeforces), methods=['GET'])
     app.add_url_rule('/api/codeforces/get-users-sub', view_func=API_Codeforces_GetUsersSub.as_view(name="/api/codeforces/get-users-sub", codeforces=codeforces), methods=['GET'])
     
-    app.run(debug=True)
+    return app
 
+def main():
+    app = create_app()
+
+    server = threading.Thread(target=lambda: serve(app, host='0.0.0.0', port=5000))
+    server.start()
+    UpdateUserInfoWithAPI()
+    UpdateUserSubWithAPI()
+
+    updateUserInfo = CircleTask(task=UpdateUserInfoWithAPI, TSecond=30)
+    updateUserInfo.run()
+    updateUserSub = CircleTask(task=UpdateUserSubWithAPI, TSecond=300)
+    updateUserSub.run()
+    
+    
 if __name__ == "__main__":
     Logger.__init__()
     main()

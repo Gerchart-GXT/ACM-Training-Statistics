@@ -27,10 +27,13 @@ class Browser:
         self.driver.implicitly_wait(10) 
 
     def __del__(self):
-        self.driver.close()
+        self.driver.quit()
 
     def openPage(self, url):
         self.driver.get(url)
+
+    def closePage(self):
+        self.driver.close()
 
     def getElement(self, css):
         return self.driver.find_element(by=By.CSS_SELECTOR, value=css)
