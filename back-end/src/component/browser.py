@@ -26,11 +26,11 @@ class Browser:
         self.driver = webdriver.Chrome(options=chrome_options)
         self.driver.implicitly_wait(10) 
 
-    def __del__(self):
-        self.driver.quit()
-
     def openPage(self, url):
         self.driver.get(url)
+
+    def closePage(self):
+        self.driver.quit()
 
     def getElement(self, css):
         return self.driver.find_element(by=By.CSS_SELECTOR, value=css)

@@ -3,3 +3,4 @@ selenium
 requests
 schedule
 waitress
+flask_cors

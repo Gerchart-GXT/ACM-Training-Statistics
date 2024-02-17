@@ -23,9 +23,8 @@ MONTH = {
 }
 
 class Codeforces:
-    def __init__(self, urlPath, browser:Browser):
+    def __init__(self, urlPath):
         Logger.callFunction()
-        self.browser=browser
         with open(file=urlPath, mode="r") as file:
             self.urls = json.load(file)
         self.urls = self.urls["codeforces"]
@@ -61,14 +60,15 @@ class Codeforces:
         Logger.callFunction()
 
         url="https://" + self.urls["sni"] + self.urls["user"]["home"] + "/" + userName
-        self.browser.openPage(url)
+        browser = Browser()
+        browser.openPage(url)
         try:
-            if self.browser.driver.current_url != url:  
+            if browser.driver.current_url != url:  
                 raise Exception("User Not Found")
 
-            if self.browser.getElement(css=".userbox .main-info  h1").text != userName:
+            if browser.getElement(css=".userbox .main-info  h1").text != userName:
                 raise Exception("Name Not Match")
-            infos = self.browser.getElement(css=".userbox  .info  ul").find_elements(By.CSS_SELECTOR, "li")
+            infos = browser.getElement(css=".userbox  .info  ul").find_elements(By.CSS_SELECTOR, "li")
             rankLine = None
             loginLine = None
             for i in infos:
@@ -78,6 +78,7 @@ class Codeforces:
                 if (line[0] == "Last" and loginLine == None):
                     loginLine = line
             Logger.retFunction("success")
+            browser.closePage()
             return {
                     "userName":userName,
                     "found": True,
@@ -89,6 +90,7 @@ class Codeforces:
             }
         except Exception as e:
             Logger.retFunction("failed" + str(e))
+            browser.closePage()
             return {
                 "userName":userName,
                 "found": False
@@ -96,25 +98,25 @@ class Codeforces:
 
     def _getUserSubmission(self, userName, verdict, minTMP):
         Logger.callFunction()
-
+        browser = Browser()
         url="https://" + self.urls["sni"] + self.urls["user"]["submission"] + "/" + userName
         try:
             
-            self.browser.openPage(url)
+            browser.openPage(url)
 
-            verdictSelector=Select(self.browser.getElement(css="form.status-filter select[id='verdictName']"))
+            verdictSelector=Select(browser.getElement(css="form.status-filter select[id='verdictName']"))
             verdictSelector.select_by_visible_text(text=verdict)
-            self.browser.getElement(css="form.status-filter input[value='Apply']").click()
+            browser.getElement(css="form.status-filter input[value='Apply']").click()
 
             pageCount = 1
-            for i in self.browser.getElements(css=".page-index"):
+            for i in browser.getElements(css=".page-index"):
                 pageCount = max(pageCount, int(i.text))
 
             subs={}
 
             outDated = False
             for _ in range(pageCount):
-                infos = (self.browser.getElement("div.datatable table.status-frame-datatable")).find_elements(By.CSS_SELECTOR, "tr")
+                infos = (browser.getElement("div.datatable table.status-frame-datatable")).find_elements(By.CSS_SELECTOR, "tr")
                 infos = infos[1:]
                 for line in infos:
                     lineItems = line.find_elements(By.CSS_SELECTOR, "td")
@@ -135,8 +137,9 @@ class Codeforces:
                 if outDated == True:
                     break
                 if _ + 1 < pageCount:
-                    self.browser.getElement(f"a[href='/submissions/{userName}/page/{_ + 2}']").click()
+                    browser.getElement(f"a[href='/submissions/{userName}/page/{_ + 2}']").click()
             Logger.retFunction("success")
+            browser.closePage()
             return {
                 "userName": userName,
                 "found": True if len(subs) > 0 else False,
@@ -150,6 +153,7 @@ class Codeforces:
             }
         except Exception as e:
             Logger.retFunction("failed" + str(e))        
+            browser.closePage()
             return {
                 "userName": userName,
                 "found": False,
@@ -203,7 +207,6 @@ class Codeforces:
                 raise Exception("User NotFound!")
             self._updateUserInfo(userInfo=apiRes, lastSubUpdateTMP=INITTMP)
             Logger.retFunction("success")
-            self.updateUsersSub()
             return True
         except Exception as e:
             Logger.retFunction("failed" + str(e))
@@ -261,9 +264,9 @@ class Codeforces:
                         subs.append(i)
                 if len(subs) > 0:
                     self._updateSubmission(userName=userName, submissions=subs)
-                current_time = datetime.now()
-                formatted_time = current_time.strftime("%Y%m%d%H%M")
-                self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
+                    current_time = datetime.now()
+                    formatted_time = current_time.strftime("%Y%m%d%H%M")
+                    self._updateUserInfo(userInfo=self._getUserInfo(userName), lastSubUpdateTMP=formatted_time)
             Logger.retFunction("success")
             return True
         except Exception as e:

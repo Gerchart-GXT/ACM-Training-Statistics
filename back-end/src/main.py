@@ -8,7 +8,7 @@ from component.circleTask import CircleTask
 
 import threading
 import requests
-
+import time 
 from waitress import serve
 
 def UpdateUserInfoWithAPI():
@@ -34,10 +34,9 @@ def UpdateUserSubWithAPI():
         Logger.retFunction("failed " + response.status_code )
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder="./dist")
     CORS(app)
-    browser = Browser()
-    codeforces = Codeforces(urlPath="./url.json", browser=browser)
+    codeforces = Codeforces(urlPath="./url.json")
 
     app.add_url_rule('/api/codeforces/insert-user', view_func=API_Codeforces_Insertuser.as_view("/api/codeforces/insert-user", codeforces=codeforces), methods=['GET'])
     app.add_url_rule('/api/codeforces/update-user-info', view_func=API_Codeforces_updateUserInfo.as_view(name="/api/codeforces/update-user-info", codeforces=codeforces), methods=['GET'])
@@ -46,14 +45,15 @@ def create_app():
     app.add_url_rule('/api/codeforces/get-users-info', view_func=API_Codeforces_GetUsersInfo.as_view(name="/api/codeforces/get-users-info", codeforces=codeforces), methods=['GET'])
     app.add_url_rule('/api/codeforces/search-users-info', view_func=API_Codeforces_SearchUserInfo.as_view(name="/api/codeforces/search-users-info", codeforces=codeforces), methods=['GET'])
     app.add_url_rule('/api/codeforces/get-users-sub', view_func=API_Codeforces_GetUsersSub.as_view(name="/api/codeforces/get-users-sub", codeforces=codeforces), methods=['GET'])
-    
+
     return app
 
 def main():
     app = create_app()
 
-    server = threading.Thread(target=lambda: serve(app, host="localhost", port=5000))
+    server = threading.Thread(target=lambda: serve(app, host="0.0.0.0", port=5000))
     server.start()
+    time.sleep(10)
     UpdateUserInfoWithAPI()
     UpdateUserSubWithAPI()
 
